@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import withAuth from '@/components/withAuth';
-import Header from '@/components/header';
+import Header from '@/components/header.js';
 
 function UserManagement({ user }) {
   const [users, setUsers] = useState([]);
@@ -17,10 +17,10 @@ function UserManagement({ user }) {
     setStudents(storedStudents);
   }, []);
 
-  const assignClass = (studentId, className) => {
+  const assignClass = (studentEmail, className) => {
     const updatedClasses = classes.map((group) => {
-      if (group.name === className && !group.studentIds.includes(studentId)) {
-        return { ...group, studentIds: [...group.studentIds, studentId] };
+      if (group.name === className && !group.studentIds.includes(studentEmail)) {
+        return { ...group, studentIds: [...group.studentIds, studentEmail] };
       }
       return group;
     });
@@ -30,10 +30,13 @@ function UserManagement({ user }) {
     alert('✅ Student added to class.');
   };
 
-  const removeFromClass = (studentId, className) => {
+  const removeFromClass = (studentEmail, className) => {
     const updatedClasses = classes.map((group) => {
-      if (group.name === className && group.studentIds.includes(studentId)) {
-        return { ...group, studentIds: group.studentIds.filter((id) => id !== studentId) };
+      if (group.name === className && group.studentIds.includes(studentEmail)) {
+        return {
+          ...group,
+          studentIds: group.studentIds.filter((e) => e !== studentEmail),
+        };
       }
       return group;
     });
@@ -43,8 +46,8 @@ function UserManagement({ user }) {
     alert('❌ Student removed from class.');
   };
 
-  const getStudentClasses = (id) => {
-    return classes.filter((c) => c.studentIds.includes(id)).map((c) => c.name);
+  const getStudentClasses = (email) => {
+    return classes.filter((c) => c.studentIds.includes(email)).map((c) => c.name);
   };
 
   return (
@@ -68,7 +71,7 @@ function UserManagement({ user }) {
               {users.map((u) => {
                 if (u.role !== 'student') {
                   return (
-                    <tr key={u.id}>
+                    <tr key={u.email}>
                       <td className="p-2 border">{u.name}</td>
                       <td className="p-2 border">{u.email}</td>
                       <td className="p-2 border capitalize">{u.role}</td>
@@ -78,12 +81,10 @@ function UserManagement({ user }) {
                   );
                 }
 
-                const studentData = students.find((s) => s.name === u.name);
-                const studentId = studentData ? studentData.id : null;
-                const currentClasses = studentId ? getStudentClasses(studentId) : [];
+                const currentClasses = getStudentClasses(u.email);
 
                 return (
-                  <tr key={u.id}>
+                  <tr key={u.email}>
                     <td className="p-2 border align-top">{u.name}</td>
                     <td className="p-2 border align-top">{u.email}</td>
                     <td className="p-2 border align-top">{u.role}</td>
@@ -97,7 +98,7 @@ function UserManagement({ user }) {
                               <span>{cls}</span>
                               <button
                                 className="ml-2 text-red-600 text-sm underline"
-                                onClick={() => removeFromClass(studentId, cls)}
+                                onClick={() => removeFromClass(u.email, cls)}
                               >
                                 Remove
                               </button>
@@ -107,20 +108,18 @@ function UserManagement({ user }) {
                       )}
                     </td>
                     <td className="p-2 border align-top">
-                      {studentId ? (
-                        <select
-                          className="p-1 rounded border text-black"
-                          onChange={(e) => {
-                            if (e.target.value) assignClass(studentId, e.target.value);
-                            e.target.selectedIndex = 0; // Reset
-                          }}
-                        >
-                          <option value="">Select Class</option>
-                          {classes.map((c, i) => (
-                            <option key={i} value={c.name}>{c.name}</option>
-                          ))}
-                        </select>
-                      ) : '—'}
+                      <select
+                        className="p-1 rounded border text-black"
+                        onChange={(e) => {
+                          if (e.target.value) assignClass(u.email, e.target.value);
+                          e.target.selectedIndex = 0;
+                        }}
+                      >
+                        <option value="">Select Class</option>
+                        {classes.map((c, i) => (
+                          <option key={i} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 );
