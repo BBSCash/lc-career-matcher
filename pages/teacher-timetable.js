@@ -19,22 +19,6 @@ function TeacherTimetable({ user }) {
     setStudents(allStudents);
   }, [user.email]);
 
-  // Toggle attendance (true = present, false = absent)
-  const toggleAttendance = (studentId) => {
-    const updated = [...classes];
-    const classIndex = classes.findIndex(c => c.name === selectedClass.name && c.day === selectedClass.day && c.time === selectedClass.time);
-    if (classIndex === -1) return;
-
-    if (!updated[classIndex].attendance) updated[classIndex].attendance = {};
-
-    const currentStatus = updated[classIndex].attendance[studentId];
-    updated[classIndex].attendance[studentId] = !currentStatus;
-
-    setClasses(updated);
-    setSelectedClass(updated[classIndex]);
-    localStorage.setItem('striveClassGroups', JSON.stringify(updated));
-  };
-
   // Count attendance for the selected class
   const countAttendance = () => {
     if (!selectedClass || !selectedClass.attendance) return { present: 0, absent: 0 };
@@ -43,8 +27,9 @@ function TeacherTimetable({ user }) {
     let absent = 0;
 
     selectedClass.studentIds.forEach(id => {
-      if (selectedClass.attendance[id]) present++;
-      else absent++;
+      if (selectedClass.attendance[id] === true) present++;
+      else if (selectedClass.attendance[id] === false) absent++;
+      else absent++; // default assume absent if no record
     });
 
     return { present, absent };
@@ -62,6 +47,20 @@ function TeacherTimetable({ user }) {
   // Navigate to student profile page
   const openStudentProfile = (email) => {
     router.push(`/student-profile/${encodeURIComponent(email)}`);
+  };
+
+  // Mark attendance: true = present, false = absent
+  const markAttendance = (studentId, isPresent) => {
+    const updated = [...classes];
+    const classIndex = classes.findIndex(c => c.name === selectedClass.name && c.day === selectedClass.day && c.time === selectedClass.time);
+    if (classIndex === -1) return;
+
+    if (!updated[classIndex].attendance) updated[classIndex].attendance = {};
+    updated[classIndex].attendance[studentId] = isPresent;
+
+    setClasses(updated);
+    setSelectedClass(updated[classIndex]);
+    localStorage.setItem('striveClassGroups', JSON.stringify(updated));
   };
 
   return (
@@ -125,7 +124,7 @@ function TeacherTimetable({ user }) {
               const stu = students.find(s => s.email === emailOrId || s.id === emailOrId);
               if (!stu) return null;
 
-              const isPresent = selectedClass.attendance?.[stu.id] ?? false;
+              const attendanceStatus = selectedClass.attendance?.[stu.id];
 
               return (
                 <li key={stu.email} className="flex justify-between items-center bg-white px-4 py-2 border rounded">
@@ -135,12 +134,22 @@ function TeacherTimetable({ user }) {
                   >
                     {stu.name}
                   </button>
-                  <button
-                    onClick={() => toggleAttendance(stu.id)}
-                    className={`px-3 py-1 rounded font-semibold text-sm ${isPresent ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
-                  >
-                    {isPresent ? 'Present' : 'Absent'}
-                  </button>
+
+                  <div className="space-x-2">
+                    <button
+                      onClick={() => markAttendance(stu.id, true)}
+                      className={`px-3 py-1 rounded font-semibold text-sm ${attendanceStatus === true ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
+                    >
+                      Present
+                    </button>
+
+                    <button
+                      onClick={() => markAttendance(stu.id, false)}
+                      className={`px-3 py-1 rounded font-semibold text-sm ${attendanceStatus === false ? 'bg-red-500 text-white' : 'bg-gray-300 text-black'}`}
+                    >
+                      Absent
+                    </button>
+                  </div>
                 </li>
               );
             })}
@@ -152,4 +161,3 @@ function TeacherTimetable({ user }) {
 }
 
 export default withAuth(TeacherTimetable, ['teacher']);
-
