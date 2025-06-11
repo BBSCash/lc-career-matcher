@@ -12,7 +12,7 @@ function PrincipalDashboard({ user }) {
     { label: 'Manage Classes', path: '/principal-classes' },
     { label: 'Attendance Report', path: '/attendance-report' },
     { label: 'Manage Users', path: '/principal-user-manager' },
-    { label: 'Anaylitics', path: /principal-anaylitics'}
+    { label: 'Anaylitics', path: '/principal-anaylitics' }
   ];
 
   return (
