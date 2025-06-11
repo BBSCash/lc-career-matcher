@@ -25,7 +25,6 @@ function TeacherTimetable({ user }) {
     setAttendanceLog(log);
   }, [user.email]);
 
-  // Mark attendance (true = present, false = absent)
   const markAttendanceLog = (studentId, isPresent) => {
     let updatedLog = [...attendanceLog];
     const index = updatedLog.findIndex(
@@ -47,7 +46,6 @@ function TeacherTimetable({ user }) {
     setAttendanceLog(updatedLog);
   };
 
-  // Get today’s attendance summary for selected class
   const getTodayAttendanceSummary = () => {
     if (!selectedClass) return { present: 0, absent: 0 };
 
@@ -64,7 +62,7 @@ function TeacherTimetable({ user }) {
         if (record.status) present++;
         else absent++;
       } else {
-        absent++; // default absent if no record
+        absent++;
       }
     });
 
@@ -73,13 +71,11 @@ function TeacherTimetable({ user }) {
 
   const { present, absent } = getTodayAttendanceSummary();
 
-  // Helpers for timetable
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const times = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
 
   const getClassAtSlot = (day, time) => classes.find(c => c.day === day && c.time === time);
 
-  // Navigate to student profile page
   const openStudentProfile = (email) => {
     router.push(`/student-profile/${encodeURIComponent(email)}`);
   };
@@ -89,7 +85,6 @@ function TeacherTimetable({ user }) {
       <Header user={user} />
       <h1 className="text-3xl font-bold text-orange-500 mb-6">📅 My Timetable</h1>
 
-      {/* Timetable Table */}
       <div className="overflow-x-auto mb-8">
         <table className="min-w-full border border-gray-300 text-center">
           <thead className="bg-orange-100 text-orange-700">
@@ -128,7 +123,6 @@ function TeacherTimetable({ user }) {
         </table>
       </div>
 
-      {/* Selected Class Students & Attendance */}
       {selectedClass && (
         <div className="bg-orange-50 p-4 rounded shadow mb-6">
           <h2 className="text-xl font-semibold text-orange-600 mb-2">
@@ -145,7 +139,6 @@ function TeacherTimetable({ user }) {
               const stu = students.find(s => s.email === emailOrId || s.id === emailOrId);
               if (!stu) return null;
 
-              // Get attendance status for today
               const attRecord = attendanceLog.find(
                 r => r.className === selectedClass.name && r.studentId === stu.id && r.date === todayDate
               );
@@ -186,4 +179,5 @@ function TeacherTimetable({ user }) {
 }
 
 export default withAuth(TeacherTimetable, ['teacher']);
+
 
