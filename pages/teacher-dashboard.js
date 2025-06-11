@@ -12,10 +12,8 @@ function TeacherDashboard({ user }) {
 
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <DashboardCard title="📅 Timetable" link="/teacher-timetable" />
-          <DashboardCard title="👥 Manage Classes" link="/teacher-classes" />
           <DashboardCard title="🧪 Test Builder" link="/test-builder" />
           <DashboardCard title="📚 Test Library" link="/teacher-test-library" />
-          <DashboardCard title="✅ Take Attendance" link="/attendance" />
           <DashboardCard title="✍️ Enter Student Results" link="/enter-results" />
         </div>
       </div>
