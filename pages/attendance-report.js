@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import withAuth from '@/components/withAuth';
-import Header from '@/components/Header';
+import Header from '@/components/header.js';
 
 function AttendanceReport({ user }) {
   const [classGroups, setClassGroups] = useState([]);
