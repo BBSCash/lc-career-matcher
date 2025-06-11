@@ -9,6 +9,8 @@ function TeacherTimetable({ user }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [results, setResults] = useState([]);
   const [notes, setNotes] = useState({});
+  const [editingResultIndex, setEditingResultIndex] = useState(null);
+  const [editResult, setEditResult] = useState({ subject: '', score: '', total: '', level: '' });
 
   useEffect(() => {
     const storedClasses = JSON.parse(localStorage.getItem('striveClassGroups')) || [];
@@ -57,6 +59,27 @@ function TeacherTimetable({ user }) {
 
   const getStudentResults = (studentId) => {
     return results.filter(r => r.studentId === studentId);
+  };
+
+  const handleEditResult = (index, result) => {
+    setEditingResultIndex(index);
+    setEditResult(result);
+  };
+
+  const handleSaveResult = (studentId) => {
+    const updated = [...results];
+    updated[editingResultIndex] = { ...editResult, studentId };
+    setResults(updated);
+    localStorage.setItem('striveResults', JSON.stringify(updated));
+    setEditingResultIndex(null);
+    setEditResult({ subject: '', score: '', total: '', level: '' });
+  };
+
+  const handleDeleteResult = (index) => {
+    const updated = [...results];
+    updated.splice(index, 1);
+    setResults(updated);
+    localStorage.setItem('striveResults', JSON.stringify(updated));
   };
 
   return (
@@ -135,7 +158,7 @@ function TeacherTimetable({ user }) {
 
       {selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full">
+          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full overflow-y-auto max-h-[90vh]">
             <h3 className="text-xl font-bold text-orange-600 mb-4">👤 {selectedStudent.name}'s Profile</h3>
             <p><strong>Email:</strong> {selectedStudent.email}</p>
             <p><strong>Year Group:</strong> {selectedStudent.yearGroup}</p>
@@ -145,9 +168,54 @@ function TeacherTimetable({ user }) {
             <h4 className="mt-4 font-semibold text-orange-500">🧪 Test Results</h4>
             <ul className="list-disc ml-5">
               {getStudentResults(selectedStudent.id).map((r, i) => (
-                <li key={i} className="text-sm">{r.subject} - {r.score}/{r.total} ({r.level})</li>
+                <li key={i} className="text-sm flex justify-between items-center">
+                  <span>{r.subject} - {r.score}/{r.total} ({r.level})</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEditResult(results.indexOf(r), r)} className="text-blue-600 text-xs">✏️</button>
+                    <button onClick={() => handleDeleteResult(results.indexOf(r))} className="text-red-600 text-xs">🗑️</button>
+                  </div>
+                </li>
               ))}
             </ul>
+
+            {editingResultIndex !== null && (
+              <div className="mt-4 bg-gray-100 p-3 rounded">
+                <h5 className="text-sm font-semibold mb-2">Edit Result</h5>
+                <input
+                  placeholder="Subject"
+                  className="w-full p-1 mb-2 border rounded text-sm"
+                  value={editResult.subject}
+                  onChange={(e) => setEditResult({ ...editResult, subject: e.target.value })}
+                />
+                <input
+                  placeholder="Score"
+                  className="w-full p-1 mb-2 border rounded text-sm"
+                  value={editResult.score}
+                  onChange={(e) => setEditResult({ ...editResult, score: e.target.value })}
+                />
+                <input
+                  placeholder="Total"
+                  className="w-full p-1 mb-2 border rounded text-sm"
+                  value={editResult.total}
+                  onChange={(e) => setEditResult({ ...editResult, total: e.target.value })}
+                />
+                <select
+                  className="w-full p-1 mb-2 border rounded text-sm"
+                  value={editResult.level}
+                  onChange={(e) => setEditResult({ ...editResult, level: e.target.value })}
+                >
+                  <option value="">Select Level</option>
+                  <option value="H">Higher</option>
+                  <option value="O">Ordinary</option>
+                </select>
+                <button
+                  onClick={() => handleSaveResult(selectedStudent.id)}
+                  className="bg-orange-500 text-white px-3 py-1 rounded text-sm w-full"
+                >
+                  💾 Save Result
+                </button>
+              </div>
+            )}
 
             <h4 className="mt-4 font-semibold text-orange-500">📝 Teacher Notes</h4>
             <textarea
@@ -171,3 +239,4 @@ function TeacherTimetable({ user }) {
 }
 
 export default withAuth(TeacherTimetable, ['teacher']);
+
