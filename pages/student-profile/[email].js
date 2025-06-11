@@ -11,20 +11,24 @@ function StudentProfile({ user }) {
   const [results, setResults] = useState([]);
   const [attendance, setAttendance] = useState([]);
 
-  // Prevent rendering until email is defined to avoid hydration errors
-  if (!email) return null;
+  if (!email) {
+    // Wait until the email is available
+    return <div>Loading...</div>;
+  }
 
   useEffect(() => {
+    if (!email) return;
+
     const students = JSON.parse(localStorage.getItem('striveStudents')) || [];
-    const foundStudent = students.find(s => s.email.toLowerCase() === email.toLowerCase());
+    const foundStudent = students.find(s => s.email && s.email.toLowerCase() === email.toLowerCase());
     setStudent(foundStudent || null);
 
     const allResults = JSON.parse(localStorage.getItem('striveResults')) || [];
-    const studentResults = allResults.filter(r => r.studentEmail.toLowerCase() === email.toLowerCase());
+    const studentResults = allResults.filter(r => r.studentEmail && r.studentEmail.toLowerCase() === email.toLowerCase());
     setResults(studentResults);
 
     const allAttendance = JSON.parse(localStorage.getItem('striveAttendance')) || [];
-    const studentAttendance = allAttendance.filter(a => a.studentEmail.toLowerCase() === email.toLowerCase());
+    const studentAttendance = allAttendance.filter(a => a.studentEmail && a.studentEmail.toLowerCase() === email.toLowerCase());
     setAttendance(studentAttendance);
   }, [email]);
 
