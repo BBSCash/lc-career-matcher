@@ -10,7 +10,6 @@ function PrincipalDashboard({ user }) {
   const buttons = [
     { label: 'Manage Students', path: '/principal-students' },
     { label: 'Manage Classes', path: '/principal-classes' },
-    { label: 'School Timetable', path: '/school-timetable' },
     { label: 'Attendance Report', path: '/attendance-report' }
   ];
 
