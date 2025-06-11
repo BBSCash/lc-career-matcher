@@ -123,17 +123,37 @@ function PrincipalAnalytics({ user }) {
           <h2 className="text-xl font-semibold mb-2 text-orange-600">CAO Points Overview</h2>
           <ul className="list-disc ml-6">
             {Object.entries(groupByYear).map(([year, points]) => {
-              const avg = points.reduce((a, b) => a + b, 0) / points.length;
-              const above200 = points.filter(p => p >= 200).length;
-              const above300 = points.filter(p => p >= 300).length;
-              const above400 = points.filter(p => p >= 400).length;
-              const above500 = points.filter(p => p >= 500).length;
-              return (
-                <li key={year}>
-                  <strong>{year}</strong>: Avg = {avg.toFixed(1)} pts | ≥200: {above200}, ≥300: {above300}, ≥400: {above400}, ≥500: {above500}
-                </li>
-              );
-            })}
+  const avg = points.reduce((a, b) => a + b, 0) / points.length;
+  const ranges = {
+    '0–99': 0,
+    '100–199': 0,
+    '200–299': 0,
+    '300–399': 0,
+    '400–499': 0,
+    '500+': 0,
+  };
+
+  points.forEach(p => {
+    if (p < 100) ranges['0–99']++;
+    else if (p < 200) ranges['100–199']++;
+    else if (p < 300) ranges['200–299']++;
+    else if (p < 400) ranges['300–399']++;
+    else if (p < 500) ranges['400–499']++;
+    else ranges['500+']++;
+  });
+
+  return (
+    <li key={year}>
+      <strong>{year}</strong>: Avg = {avg.toFixed(1)} pts | 
+      {' '}
+      {Object.entries(ranges).map(([range, count], i) => (
+        <span key={i}>
+          {range}: {count}{i < Object.entries(ranges).length - 1 ? ', ' : ''}
+        </span>
+      ))}
+    </li>
+  );
+})}
           </ul>
         </div>
 
