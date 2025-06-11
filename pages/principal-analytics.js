@@ -163,4 +163,5 @@ function PrincipalAnalytics({ user }) {
   );
 }
 
+
 export default withAuth(PrincipalAnalytics, ['principal']);
