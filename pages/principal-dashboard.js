@@ -10,8 +10,7 @@ function PrincipalDashboard({ user }) {
     { label: 'Manage Classes', path: '/principal-classes' },
     { label: 'Attendance Report', path: '/attendance-report' },
     { label: 'Manage Users', path: '/user-management' },
-    { label: 'Analytics', path: '/principal-analytics' },
-    { label: '📅 Timetable Planner', path: '/timetable/dashboard' }  // 👈 New button
+    { label: 'Analytics', path: '/principal-analytics' }
   ];
 
   return (
