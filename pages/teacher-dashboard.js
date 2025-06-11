@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import withAuth from '@/components/withAuth';
-import Header from '@/components/header';
+import Header from '@/components/header.js';
 
 function TeacherDashboard({ user }) {
   return (
