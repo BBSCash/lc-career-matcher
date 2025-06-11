@@ -1,21 +1,16 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { getSession } from 'next-auth/react';
-import Header from '@/components/header.js';
+import Header from '@/components/Header';
 import Link from 'next/link';
+import withAuth from '@/components/withAuth';
 
-export default function StudentProfile() {
+function StudentProfile({ user }) {
   const router = useRouter();
   const { email } = router.query;
   const [studentData, setStudentData] = useState(null);
-  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
-      const session = await getSession();
-      if (!session) return router.push('/login');
-      setUserRole(session.user.role);
-
       const res = await fetch(`/api/student-results?email=${email}`);
       const data = await res.json();
 
@@ -73,7 +68,7 @@ export default function StudentProfile() {
 
   return (
     <div className="bg-white min-h-screen text-black">
-      <Header />
+      <Header user={user} />
       <div className="p-6">
         <h1 className="text-2xl font-bold text-orange-500">{studentData.name}'s Profile</h1>
         <p className="text-sm text-gray-600">{studentData.email} | {studentData.yearGroup}</p>
@@ -107,7 +102,7 @@ export default function StudentProfile() {
                 {subj.results.map((r, i) => (
                   <li key={i} className="mb-1">
                     <span>{r.topic} - {r.score}% ({r.date})</span>
-                    {['teacher', 'principal'].includes(userRole) && (
+                    {['teacher', 'principal'].includes(user.role) && (
                       <span className="ml-4">
                         <button className="text-blue-600 mr-2" onClick={() => console.log('Edit', r)}>Edit</button>
                         <button className="text-red-600" onClick={() => console.log('Delete', r)}>Delete</button>
@@ -136,3 +131,6 @@ export default function StudentProfile() {
     </div>
   );
 }
+
+export default withAuth(StudentProfile, ['teacher', 'principal']);
+
