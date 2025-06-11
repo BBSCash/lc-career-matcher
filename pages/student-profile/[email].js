@@ -11,21 +11,25 @@ function StudentProfile({ user }) {
   const [results, setResults] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState({});
 
+  // Effect 1: Find student
   useEffect(() => {
-    if (!router.isReady) return; // wait for router to be ready
-
-    if (!email) return;
+    if (!router.isReady || !email) return;
 
     const students = JSON.parse(localStorage.getItem('striveStudents')) || [];
     const foundStudent = students.find(s => s.email.toLowerCase() === email.toLowerCase());
     setStudent(foundStudent || null);
+  }, [router.isReady, email]);
+
+  // Effect 2: Once student found, get results and attendance
+  useEffect(() => {
+    if (!student) return;
 
     const allResults = JSON.parse(localStorage.getItem('striveResults')) || [];
-    const studentResults = allResults.filter(r => r.studentEmail.toLowerCase() === email.toLowerCase());
+    const studentResults = allResults.filter(r => r.studentEmail.toLowerCase() === student.email.toLowerCase());
     setResults(studentResults);
 
     const attendanceLog = JSON.parse(localStorage.getItem('striveAttendance')) || [];
-    const studentAttendance = attendanceLog.filter(a => a.studentId === foundStudent?.id);
+    const studentAttendance = attendanceLog.filter(a => a.studentId === student.id);
 
     // Aggregate attendance by class
     const summary = {};
@@ -36,11 +40,10 @@ function StudentProfile({ user }) {
     });
 
     setAttendanceSummary(summary);
-  }, [router.isReady, email]);
+  }, [student]);
 
   if (!router.isReady) {
-    // You can show a loading spinner or nothing while router loads
-    return null;
+    return null; // or loading spinner
   }
 
   if (!student) return (
