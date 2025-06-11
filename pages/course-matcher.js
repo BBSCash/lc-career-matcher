@@ -6,18 +6,19 @@ function CourseMatcher() {
   const [caoPoints, setCaoPoints] = useState(0);
   const [matchedCourses, setMatchedCourses] = useState([]);
   const [topSubjects, setTopSubjects] = useState([]);
+  const [liveStudentData, setLiveStudentData] = useState([]);
 
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('striveUser')) : null;
 
   useEffect(() => {
     if (!user?.email) return;
 
-    const saved = localStorage.getItem('striveResults');
-    if (!saved) return;
+    const savedResults = localStorage.getItem('striveResults');
+    if (!savedResults) return;
 
-    const results = JSON.parse(saved);
+    const results = JSON.parse(savedResults);
 
-    // Filter results by studentEmail
+    // Filter results by this student
     const userResults = results.filter(r => r.studentEmail === user.email);
 
     // Calculate averages & points
@@ -26,11 +27,15 @@ function CourseMatcher() {
     setCaoPoints(totalPoints);
     setTopSubjects(top6.map((s) => s.subject));
 
+    // Recommend courses based on top subjects and points
     const matches = recommendCourses(top6, totalPoints, courses);
     setMatchedCourses(matches);
+
+    // Update live student data with current user's points and courses
+    updateLiveStudentData(user.email, totalPoints, matches.map(c => c.title));
   }, [user]);
 
-  // Helper: CAO points calculation
+  // CAO points calculator (same as before)
   const getCAOPoints = (percent, level) => {
     if (level === 'H') {
       if (percent >= 90) return 100;
@@ -52,7 +57,7 @@ function CourseMatcher() {
     }
   };
 
-  // Helper: Calculate top 6 subjects with averages and points
+  // Calculate top 6 averages & points
   const calculateTop6 = (results) => {
     const data = {};
 
@@ -78,7 +83,7 @@ function CourseMatcher() {
     return { top6, totalPoints };
   };
 
-  // Helper: Map subject to category
+  // Map subjects to categories (same as before)
   const mapSubjectToCategory = (subject) => {
     const lower = subject.toLowerCase();
     if (['maths', 'mathematics', 'applied mathematics', 'physics', 'chemistry', 'biology', 'technology', 'engineering', 'computer science'].some(s => lower.includes(s))) return 'stem';
@@ -87,12 +92,39 @@ function CourseMatcher() {
     return '';
   };
 
-  // Helper: Recommend courses
+  // Recommend courses based on category and points
   const recommendCourses = (topSubjects, totalPoints, coursesList) => {
     return coursesList.filter(course => {
       return course.points <= totalPoints &&
         topSubjects.some(sub => course.category?.toLowerCase().includes(mapSubjectToCategory(sub.subject)));
     });
+  };
+
+  // Update live student data in localStorage
+  const updateLiveStudentData = (email, points, recommendedCourses) => {
+    const stored = JSON.parse(localStorage.getItem('liveStudentData')) || [];
+    const index = stored.findIndex(s => s.email === email);
+    if (index >= 0) {
+      stored[index] = { email, caoPoints: points, recommendedCourses };
+    } else {
+      stored.push({ email, caoPoints: points, recommendedCourses });
+    }
+    localStorage.setItem('liveStudentData', JSON.stringify(stored));
+    setLiveStudentData(stored);
+  };
+
+  // Calculate percentile for live data
+  const calculateLivePercentile = (courseTitle) => {
+    if (!liveStudentData.length) return null;
+    const relevantPoints = liveStudentData
+      .filter(s => s.recommendedCourses.includes(courseTitle))
+      .map(s => s.caoPoints)
+      .sort((a, b) => a - b);
+
+    if (relevantPoints.length === 0) return null;
+
+    const countBelow = relevantPoints.filter(p => p <= caoPoints).length;
+    return ((countBelow / relevantPoints.length) * 100).toFixed(1);
   };
 
   return (
@@ -108,14 +140,22 @@ function CourseMatcher() {
           <p className="text-gray-500">No course matches found for your profile yet.</p>
         ) : (
           <div className="space-y-4">
-            {matchedCourses.map((course, i) => (
-              <div key={i} className="bg-gray-50 border border-gray-200 p-4 rounded shadow-sm">
-                <h3 className="text-xl font-semibold text-orange-500">{course.title}</h3>
-                <p className="text-sm text-gray-700">
-                  {course.college} — {course.points} Points — {course.category}
-                </p>
-              </div>
-            ))}
+            {matchedCourses.map((course, i) => {
+              const percentile = calculateLivePercentile(course.title);
+              return (
+                <div key={i} className="bg-gray-50 border border-gray-200 p-4 rounded shadow-sm">
+                  <h3 className="text-xl font-semibold text-orange-500">{course.title}</h3>
+                  <p className="text-sm text-gray-700">
+                    {course.college} — {course.points} Points — {course.category}
+                  </p>
+                  {percentile !== null && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Your live percentile for this course: <strong>{percentile}%</strong>
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
