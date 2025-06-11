@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import withAuth from '@/components/withAuth';
-import Header from '@/components/header';
+import Header from '@/components/header.js';
 
 function EnterResults({ user }) {
   const [students, setStudents] = useState([]);
