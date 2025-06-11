@@ -9,19 +9,23 @@ function TestResults({ user }) {
   const [topSubjects, setTopSubjects] = useState([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [recommendedCourses, setRecommendedCourses] = useState([]);
+  const [liveStudentData, setLiveStudentData] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('striveResults');
-    if (!saved) return;
+    const savedResults = localStorage.getItem('striveResults');
+    const liveData = JSON.parse(localStorage.getItem('liveStudentData')) || [];
+    setLiveStudentData(liveData);
 
-    const allResults = JSON.parse(saved);
-    // Filter by logged-in student's email
+    if (!savedResults) return;
+
+    const allResults = JSON.parse(savedResults);
+    // Filter by logged-in student email
     const userResults = allResults.filter(r => r.studentEmail === user.email);
     setResults(userResults);
+
     calculateAverages(userResults);
   }, [user.email]);
 
-  // Same CAO points function as before
   const getCAOPoints = (percent, level) => {
     if (level === 'H') {
       if (percent >= 90) return 100;
@@ -84,6 +88,19 @@ function TestResults({ user }) {
     setRecommendedCourses(matchedCourses);
   };
 
+  const calculateLivePercentile = (courseTitle) => {
+    if (!liveStudentData.length) return null;
+    const relevantPoints = liveStudentData
+      .filter(s => s.recommendedCourses.includes(courseTitle))
+      .map(s => s.caoPoints)
+      .sort((a, b) => a - b);
+
+    if (relevantPoints.length === 0) return null;
+
+    const countBelow = relevantPoints.filter(p => p <= totalPoints).length;
+    return ((countBelow / relevantPoints.length) * 100).toFixed(1);
+  };
+
   return (
     <div className="min-h-screen bg-white text-black">
       <Header user={user} />
@@ -122,12 +139,20 @@ function TestResults({ user }) {
           <h2 className="text-xl font-semibold text-orange-500 mb-3">🎓 Recommended Courses</h2>
           {recommendedCourses.length === 0 ? <p>No courses matched.</p> : (
             <ul className="space-y-3">
-              {recommendedCourses.map((c, i) => (
-                <li key={i} className="bg-gray-100 p-4 rounded">
-                  <p className="font-bold text-lg">{c.title}</p>
-                  <p>{c.college} — {c.points} Points — {c.category}</p>
-                </li>
-              ))}
+              {recommendedCourses.map((c, i) => {
+                const percentile = calculateLivePercentile(c.title);
+                return (
+                  <li key={i} className="bg-gray-100 p-4 rounded">
+                    <p className="font-bold text-lg">{c.title}</p>
+                    <p>{c.college} — {c.points} Points — {c.category}</p>
+                    {percentile !== null && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Your live percentile for this course: <strong>{percentile}%</strong>
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
