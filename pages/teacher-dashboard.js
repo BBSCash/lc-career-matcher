@@ -16,6 +16,7 @@ function TeacherDashboard({ user }) {
           <DashboardCard title="🧪 Test Builder" link="/test-builder" />
           <DashboardCard title="📚 Test Library" link="/teacher-test-library" />
           <DashboardCard title="✅ Take Attendance" link="/attendance" />
+          <DashboardCard title="✍️ Enter Student Results" link="/enter-results" />
         </div>
       </div>
     </div>
