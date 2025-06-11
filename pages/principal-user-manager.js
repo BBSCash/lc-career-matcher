@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import withAuth from '@/components/withAuth';
 import Header from '@/components/header';
 
+const YEAR_GROUPS = ['1st Year', '2nd Year', '3rd Year', 'Transition Year', '5th Year', '6th Year'];
+
 function PrincipalUserManager({ user }) {
   const [users, setUsers] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', role: '', password: '' });
+  const [roleFilter, setRoleFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('striveUsers')) || [];
@@ -38,13 +42,50 @@ function PrincipalUserManager({ user }) {
     setForm({ name: '', email: '', role: '', password: '' });
   };
 
+  const filteredUsers = users.filter(u => {
+    if (roleFilter && u.role !== roleFilter) return false;
+    if (roleFilter === 'student' && yearFilter && u.yearGroup !== yearFilter) return false;
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-white text-black">
       <Header user={user} />
       <div className="max-w-5xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-orange-500 mb-6">👥 Manage All Accounts</h1>
 
-        {users.length === 0 ? (
+        <div className="mb-6 flex gap-4 items-center">
+          <label className="text-sm font-medium">Filter by Role:</label>
+          <select
+            className="border p-2 rounded"
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setYearFilter('');
+            }}
+          >
+            <option value="">All</option>
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="principal">Principal</option>
+          </select>
+
+          {roleFilter === 'student' && (
+            <>
+              <label className="text-sm font-medium ml-4">Year Group:</label>
+              <select
+                className="border p-2 rounded"
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+              >
+                <option value="">All Years</option>
+                {YEAR_GROUPS.map(yr => <option key={yr} value={yr}>{yr}</option>)}
+              </select>
+            </>
+          )}
+        </div>
+
+        {filteredUsers.length === 0 ? (
           <p>No user accounts found.</p>
         ) : (
           <table className="min-w-full border border-gray-300 mb-8">
@@ -53,18 +94,20 @@ function PrincipalUserManager({ user }) {
                 <th className="p-2 border">Name</th>
                 <th className="p-2 border">Email</th>
                 <th className="p-2 border">Role</th>
+                <th className="p-2 border">Year Group</th>
                 <th className="p-2 border">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u, i) => (
+              {filteredUsers.map((u, i) => (
                 <tr key={i} className="odd:bg-gray-50">
                   <td className="p-2 border">{u.name}</td>
                   <td className="p-2 border">{u.email}</td>
                   <td className="p-2 border">{u.role}</td>
+                  <td className="p-2 border">{u.yearGroup || '-'}</td>
                   <td className="p-2 border text-center">
-                    <button onClick={() => handleEdit(i)} className="text-blue-600 hover:underline mr-3">Edit</button>
-                    <button onClick={() => handleDelete(i)} className="text-red-600 hover:underline">Delete</button>
+                    <button onClick={() => handleEdit(users.indexOf(u))} className="text-blue-600 hover:underline mr-3">Edit</button>
+                    <button onClick={() => handleDelete(users.indexOf(u))} className="text-red-600 hover:underline">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -82,6 +125,12 @@ function PrincipalUserManager({ user }) {
               <option value="teacher">Teacher</option>
               <option value="principal">Principal</option>
             </select>
+            {form.role === 'student' && (
+              <select name="yearGroup" value={form.yearGroup || ''} onChange={handleChange} className="w-full p-2 rounded border mb-2">
+                <option value="">Select Year Group</option>
+                {YEAR_GROUPS.map(yr => <option key={yr} value={yr}>{yr}</option>)}
+              </select>
+            )}
             <input name="password" type="password" placeholder="New Password" value={form.password} onChange={handleChange} className="w-full p-2 rounded border mb-2" />
             <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded font-semibold w-full">💾 Save Changes</button>
           </div>
@@ -92,3 +141,4 @@ function PrincipalUserManager({ user }) {
 }
 
 export default withAuth(PrincipalUserManager, ['principal']);
+
