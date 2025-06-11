@@ -1,161 +1,99 @@
 import { useEffect, useState } from 'react';
-import withAuth from '@/components/withAuth';
 import Header from '@/components/header.js';
-import courses from '../data/courses.json';
+import { calculateTop6 } from '@/lib/cao.js';
+import { recommendCourses } from '@/lib/course-recommend.js';
+import courses from '@/data/courses.json';
+import withAuth from '@/components/withAuth';
 
 function TestResults({ user }) {
   const [results, setResults] = useState([]);
-  const [subjectAverages, setSubjectAverages] = useState([]);
-  const [topSubjects, setTopSubjects] = useState([]);
-  const [totalPoints, setTotalPoints] = useState(0);
   const [recommendedCourses, setRecommendedCourses] = useState([]);
-  const [liveStudentData, setLiveStudentData] = useState([]);
+  const [percentiles, setPercentiles] = useState({});
+  const [top6Subjects, setTop6Subjects] = useState([]);
+  const [totalPoints, setTotalPoints] = useState(0);
 
   useEffect(() => {
-    const savedResults = localStorage.getItem('striveResults');
-    const liveData = JSON.parse(localStorage.getItem('liveStudentData')) || [];
-    setLiveStudentData(liveData);
+    const savedResults = JSON.parse(localStorage.getItem('striveResults')) || [];
+    setResults(savedResults);
 
-    if (!savedResults) return;
+    const { top6, totalPoints: points } = calculateTop6(savedResults);
+    setTotalPoints(points);
+    setTop6Subjects(top6.map(s => s.subject));
 
-    const allResults = JSON.parse(savedResults);
-    // Filter by logged-in student email
-    const userResults = allResults.filter(r => r.studentEmail === user.email);
-    setResults(userResults);
+    const matches = recommendCourses(top6, points, courses);
+    setRecommendedCourses(matches);
 
-    calculateAverages(userResults);
-  }, [user.email]);
+    // Calculate percentiles live from all students' results in localStorage
+    const allResults = JSON.parse(localStorage.getItem('striveResults')) || [];
+    const allStudents = JSON.parse(localStorage.getItem('striveStudents')) || [];
+    // Map student email to their total points (top6)
+    const studentPointsMap = {};
 
-  const getCAOPoints = (percent, level) => {
-    if (level === 'H') {
-      if (percent >= 90) return 100;
-      if (percent >= 80) return 88;
-      if (percent >= 70) return 77;
-      if (percent >= 60) return 66;
-      if (percent >= 50) return 56;
-      if (percent >= 40) return 46;
-      if (percent >= 30) return 37;
-      return 0;
-    } else {
-      if (percent >= 90) return 56;
-      if (percent >= 80) return 46;
-      if (percent >= 70) return 37;
-      if (percent >= 60) return 28;
-      if (percent >= 50) return 20;
-      if (percent >= 40) return 12;
-      return 0;
-    }
-  };
+    allStudents.forEach(student => {
+      // Filter results for this student
+      const studentResults = allResults.filter(r => r.student === student.email);
+      const { totalPoints: studentTotalPoints } = calculateTop6(studentResults);
+      studentPointsMap[student.email] = studentTotalPoints;
+    });
 
-  const mapSubjectToCategory = (subject) => {
-    const lower = subject.toLowerCase();
-    if (['maths', 'mathematics', 'applied mathematics', 'physics', 'chemistry', 'biology', 'technology', 'engineering', 'computer science'].some(s => lower.includes(s))) return 'stem';
-    if (['french', 'german', 'irish', 'english', 'italian', 'spanish', 'language'].some(s => lower.includes(s))) return 'arts';
-    if (['business', 'economics', 'accounting'].some(s => lower.includes(s))) return 'business';
-    return '';
-  };
+    // For each recommended course, calculate percentile based on students who have that course's category in their top6 subjects
+    const newPercentiles = {};
+    matches.forEach(course => {
+      const courseCategory = course.category.toLowerCase();
+      // Gather points of students who have this category in their top6 subjects
+      const relevantPoints = allStudents
+        .map(student => {
+          const studentResults = allResults.filter(r => r.student === student.email);
+          const { top6 } = calculateTop6(studentResults);
+          const categories = top6.map(s => s.subject.toLowerCase());
+          // Simple mapping of subject to category - replicate mapSubjectToCategory logic here if needed
+          // For now, just check if courseCategory is included in student's categories
+          if (categories.some(sub => courseCategory.includes(sub))) {
+            const { totalPoints: pts } = calculateTop6(studentResults);
+            return pts;
+          }
+          return null;
+        })
+        .filter(pts => pts !== null)
+        .sort((a, b) => a - b);
 
-  const calculateAverages = (results) => {
-    const data = {};
+      // Calculate percentile for current user's total points against relevantPoints
+      const rank = relevantPoints.filter(pts => pts < totalPoints).length;
+      const percentile = relevantPoints.length > 0 ? Math.round((rank / relevantPoints.length) * 100) : null;
 
-    results.forEach(res => {
-      const key = `${res.subject}__${res.level}`;
-      const percent = (res.score / (res.total || 100)) * 100;
-      if (!data[key]) {
-        data[key] = { subject: res.subject, level: res.level, total: 0, count: 0 };
+      if (percentile !== null) {
+        newPercentiles[course.title] = percentile;
       }
-      data[key].total += percent;
-      data[key].count++;
     });
 
-    const averages = Object.values(data).map(({ subject, level, total, count }) => {
-      const avg = total / count;
-      const points = getCAOPoints(avg, level);
-      return { subject, level, avg: avg.toFixed(1), points };
-    });
-
-    const top6 = [...averages].sort((a, b) => b.points - a.points).slice(0, 6);
-    const totalPts = top6.reduce((sum, s) => sum + s.points, 0);
-
-    const matchedCourses = courses.filter(course => {
-      return course.points <= totalPts &&
-        top6.some(sub => course.category?.toLowerCase().includes(mapSubjectToCategory(sub.subject)));
-    });
-
-    setSubjectAverages(averages);
-    setTopSubjects(top6);
-    setTotalPoints(totalPts);
-    setRecommendedCourses(matchedCourses);
-  };
-
-  const calculateLivePercentile = (courseTitle) => {
-    if (!liveStudentData.length) return null;
-    const relevantPoints = liveStudentData
-      .filter(s => s.recommendedCourses.includes(courseTitle))
-      .map(s => s.caoPoints)
-      .sort((a, b) => a - b);
-
-    if (relevantPoints.length === 0) return null;
-
-    const countBelow = relevantPoints.filter(p => p <= totalPoints).length;
-    return ((countBelow / relevantPoints.length) * 100).toFixed(1);
-  };
+    setPercentiles(newPercentiles);
+  }, [user.email]);
 
   return (
     <div className="min-h-screen bg-white text-black">
       <Header user={user} />
+      <div className="max-w-5xl mx-auto px-6 py-10">
+        <h1 className="text-3xl font-bold text-orange-500 mb-6">📊 Your Test Results & Recommended Courses</h1>
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold text-orange-500 mb-6">📊 My Results Dashboard</h1>
-
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold text-orange-500 mb-3">📈 Subject Averages & CAO Points</h2>
-          {subjectAverages.length === 0 ? (
-            <p>No test results yet.</p>
-          ) : (
-            <ul className="list-disc ml-6 space-y-1">
-              {subjectAverages.map((entry, i) => (
-                <li key={i}>
-                  {entry.subject} ({entry.level}): {entry.avg}% — {entry.points} CAO Points
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold text-orange-500 mb-3">🏆 Top 6 Subjects</h2>
-          {topSubjects.length === 0 ? <p>No data.</p> : (
-            <ul className="list-disc ml-6">
-              {topSubjects.map((subj, i) => (
-                <li key={i}>{subj.subject} ({subj.level}) — {subj.points} pts</li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-2 font-bold">Total CAO Points: {totalPoints}</p>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold text-orange-500 mb-3">🎓 Recommended Courses</h2>
-          {recommendedCourses.length === 0 ? <p>No courses matched.</p> : (
-            <ul className="space-y-3">
-              {recommendedCourses.map((c, i) => {
-                const percentile = calculateLivePercentile(c.title);
-                return (
-                  <li key={i} className="bg-gray-100 p-4 rounded">
-                    <p className="font-bold text-lg">{c.title}</p>
-                    <p>{c.college} — {c.points} Points — {c.category}</p>
-                    {percentile !== null && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Your live percentile for this course: <strong>{percentile}%</strong>
-                      </p>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+        {recommendedCourses.length === 0 ? (
+          <p className="text-gray-500">No recommended courses found based on your results.</p>
+        ) : (
+          <div className="space-y-4">
+            {recommendedCourses.map((course, i) => (
+              <div key={i} className="bg-gray-50 border border-gray-200 p-4 rounded shadow-sm flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-semibold text-orange-500">{course.title}</h3>
+                  <p className="text-sm text-gray-700">
+                    {course.college} — {course.points} Points — {course.category}
+                  </p>
+                </div>
+                <div className="text-gray-500 font-semibold">
+                  {percentiles[course.title] !== undefined ? `${percentiles[course.title]}th percentile` : '-'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
