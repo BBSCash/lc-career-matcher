@@ -11,9 +11,10 @@ function StudentProfile({ user }) {
   const [results, setResults] = useState([]);
   const [attendance, setAttendance] = useState([]);
 
-  useEffect(() => {
-    if (!email) return;
+  // Prevent rendering until email is defined to avoid hydration errors
+  if (!email) return null;
 
+  useEffect(() => {
     const students = JSON.parse(localStorage.getItem('striveStudents')) || [];
     const foundStudent = students.find(s => s.email.toLowerCase() === email.toLowerCase());
     setStudent(foundStudent || null);
