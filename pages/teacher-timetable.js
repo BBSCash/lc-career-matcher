@@ -1,36 +1,13 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/header.js';
 import withAuth from '@/components/withAuth';
-
-// Modal component for popup display
-function Modal({ children, onClose }) {
-  return (
-    <>
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
-        onClick={onClose}
-      />
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded shadow-lg max-w-lg w-full max-h-[90vh] overflow-auto relative p-6">
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 text-gray-600 hover:text-gray-900 font-bold text-xl"
-            aria-label="Close modal"
-          >
-            &times;
-          </button>
-          {children}
-        </div>
-      </div>
-    </>
-  );
-}
+import { useRouter } from 'next/router';
 
 function TeacherTimetable({ user }) {
+  const router = useRouter();
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [results, setResults] = useState([]);
   const [editingResultIndex, setEditingResultIndex] = useState(null);
   const [editResult, setEditResult] = useState({ subject: '', topic: '', score: '', total: 100, level: '' });
@@ -48,14 +25,12 @@ function TeacherTimetable({ user }) {
   }, [user.email]);
 
   // Helpers
-
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const times = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
 
   const getClassAtSlot = (day, time) => classes.find(c => c.day === day && c.time === time);
 
-  // Editing Results
-
+  // Edit results handlers
   const startEditResult = (index) => {
     setEditingResultIndex(index);
     setEditResult(results[index]);
@@ -77,8 +52,7 @@ function TeacherTimetable({ user }) {
     localStorage.setItem('striveResults', JSON.stringify(updatedResults));
   };
 
-  // Attendance toggle (existing)
-
+  // Attendance toggle
   const toggleAttendance = (studentId) => {
     const updated = [...classes];
     const classIndex = classes.findIndex(c => c.name === selectedClass.name && c.day === selectedClass.day && c.time === selectedClass.time);
@@ -87,6 +61,11 @@ function TeacherTimetable({ user }) {
     setClasses(updated);
     setSelectedClass(updated[classIndex]);
     localStorage.setItem('striveClassGroups', JSON.stringify(updated));
+  };
+
+  // Navigate to student profile page
+  const goToStudentProfile = (studentEmail) => {
+    router.push(`/student-profile/${encodeURIComponent(studentEmail)}`);
   };
 
   return (
@@ -133,22 +112,21 @@ function TeacherTimetable({ user }) {
         </table>
       </div>
 
-      {/* Modal for Selected Class Students */}
+      {/* Selected Class Students */}
       {selectedClass && (
-        <Modal onClose={() => setSelectedClass(null)}>
+        <div className="bg-orange-50 p-4 rounded shadow mb-6">
           <h2 className="text-xl font-semibold text-orange-600 mb-4">
             🧑‍🏫 {selectedClass.name} - {selectedClass.day} at {selectedClass.time}
           </h2>
-          <ul className="space-y-2 max-h-96 overflow-y-auto">
+          <ul className="space-y-2 max-h-80 overflow-y-auto">
             {selectedClass.studentIds.map(emailOrId => {
-              // Find student by email or id
               const stu = students.find(s => s.email === emailOrId || s.id === emailOrId);
               if (!stu) return null;
               const isPresent = selectedClass.attendance?.[stu.id];
               return (
                 <li key={stu.email} className="flex justify-between items-center bg-white px-4 py-2 border rounded">
                   <button
-                    onClick={() => setSelectedStudent(stu)}
+                    onClick={() => goToStudentProfile(stu.email)}
                     className="text-blue-600 hover:underline"
                   >
                     {stu.name}
@@ -163,85 +141,66 @@ function TeacherTimetable({ user }) {
               );
             })}
           </ul>
-        </Modal>
+        </div>
       )}
 
-      {/* Selected Student Profile & Results Modal */}
-      {selectedStudent && (
-        <Modal onClose={() => setSelectedStudent(null)}>
-          <h3 className="text-xl font-bold text-orange-600 mb-4">👤 {selectedStudent.name}'s Profile</h3>
-          <p><strong>Email:</strong> {selectedStudent.email}</p>
-          <p><strong>Year Group:</strong> {selectedStudent.yearGroup}</p>
-
-          <h4 className="mt-4 font-semibold text-orange-500">🧪 Test Results</h4>
-          <ul className="list-disc ml-5">
-            {results
-              .map((r, i) => ({ ...r, index: i }))
-              .filter(r => r.studentEmail === selectedStudent.email)
-              .map(r => (
-                <li key={r.index} className="flex justify-between items-center text-sm mb-1">
-                  <span>{r.subject} ({r.level}) - {r.topic ? `${r.topic} - ` : ''}{r.score}/{r.total}</span>
-                  <span>
-                    <button onClick={() => startEditResult(r.index)} className="text-blue-600 text-xs mr-2">✏️</button>
-                    <button onClick={() => deleteResult(r.index)} className="text-red-600 text-xs">🗑️</button>
-                  </span>
-                </li>
-              ))}
-          </ul>
-
-          {/* Edit Result Panel */}
-          {editingResultIndex !== null && (
-            <div className="mt-4 bg-gray-100 p-3 rounded">
-              <h5 className="text-sm font-semibold mb-2">Edit Result</h5>
-              <input
-                placeholder="Subject"
-                className="w-full p-1 mb-2 border rounded text-sm"
-                value={editResult.subject}
-                onChange={(e) => setEditResult({ ...editResult, subject: e.target.value })}
-              />
-              <input
-                placeholder="Topic"
-                className="w-full p-1 mb-2 border rounded text-sm"
-                value={editResult.topic}
-                onChange={(e) => setEditResult({ ...editResult, topic: e.target.value })}
-              />
-              <input
-                placeholder="Score"
-                className="w-full p-1 mb-2 border rounded text-sm"
-                value={editResult.score}
-                onChange={(e) => setEditResult({ ...editResult, score: e.target.value })}
-              />
-              <input
-                placeholder="Total"
-                className="w-full p-1 mb-2 border rounded text-sm"
-                value={editResult.total}
-                onChange={(e) => setEditResult({ ...editResult, total: e.target.value })}
-              />
-              <select
-                className="w-full p-1 mb-2 border rounded text-sm"
-                value={editResult.level}
-                onChange={(e) => setEditResult({ ...editResult, level: e.target.value })}
-              >
-                <option value="">Select Level</option>
-                <option value="H">Higher</option>
-                <option value="O">Ordinary</option>
-              </select>
-              <button
-                onClick={saveEditResult}
-                className="bg-orange-500 text-white px-3 py-1 rounded text-sm w-full"
-              >
-                💾 Save Result
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => setSelectedStudent(null)}
-            className="mt-4 text-orange-600 underline text-sm"
+      {/* Edit Result Panel */}
+      {editingResultIndex !== null && (
+        <div className="bg-gray-100 p-6 rounded shadow max-w-md mx-auto">
+          <h5 className="text-lg font-semibold mb-4 text-center">Edit Result</h5>
+          <input
+            placeholder="Subject"
+            className="w-full p-2 mb-4 border rounded text-sm"
+            value={editResult.subject}
+            onChange={(e) => setEditResult({ ...editResult, subject: e.target.value })}
+          />
+          <input
+            placeholder="Topic"
+            className="w-full p-2 mb-4 border rounded text-sm"
+            value={editResult.topic}
+            onChange={(e) => setEditResult({ ...editResult, topic: e.target.value })}
+          />
+          <input
+            placeholder="Score"
+            type="number"
+            className="w-full p-2 mb-4 border rounded text-sm"
+            value={editResult.score}
+            onChange={(e) => setEditResult({ ...editResult, score: e.target.value })}
+          />
+          <input
+            placeholder="Total"
+            type="number"
+            className="w-full p-2 mb-4 border rounded text-sm"
+            value={editResult.total}
+            onChange={(e) => setEditResult({ ...editResult, total: e.target.value })}
+          />
+          <select
+            className="w-full p-2 mb-4 border rounded text-sm"
+            value={editResult.level}
+            onChange={(e) => setEditResult({ ...editResult, level: e.target.value })}
           >
-            ✖ Close
-          </button>
-        </Modal>
+            <option value="">Select Level</option>
+            <option value="H">Higher</option>
+            <option value="O">Ordinary</option>
+          </select>
+          <div className="flex justify-between">
+            <button
+              onClick={() => {
+                setEditingResultIndex(null);
+                setEditResult({ subject: '', topic: '', score: '', total: 100, level: '' });
+              }}
+              className="bg-gray-300 px-4 py-2 rounded text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveEditResult}
+              className="bg-orange-500 text-white px-4 py-2 rounded text-sm"
+            >
+              Save Result
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
