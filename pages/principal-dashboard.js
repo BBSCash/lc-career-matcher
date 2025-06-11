@@ -1,5 +1,3 @@
-// pages/principal-dashboard.js
-
 import Header from '@/components/header';
 import withAuth from '@/components/withAuth';
 import { useRouter } from 'next/router';
@@ -13,7 +11,7 @@ function PrincipalDashboard({ user }) {
     { label: 'Attendance Report', path: '/attendance-report' },
     { label: 'Manage Users', path: '/user-management' },
     { label: 'Analytics', path: '/principal-analytics' },
-    { label: '📅 Timetable Planner', path: '/timetable/dashboard' }
+    { label: '📅 Timetable Planner', path: '/timetable/dashboard' }  // 👈 New button
   ];
 
   return (
