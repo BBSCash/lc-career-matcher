@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import withAuth from '@/components/withAuth';
-import Header from '@/components/header.js';
+import Header from '@/components/header';
 
 function UserManagement({ user }) {
   const [users, setUsers] = useState([]);
