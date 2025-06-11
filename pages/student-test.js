@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import withAuth from '@/components/withAuth';
-import Header from '@/components/Header';
+import Header from '@/components/header.js';
 
 function StudentTestList({ user }) {
   const [assignedTests, setAssignedTests] = useState([]);
