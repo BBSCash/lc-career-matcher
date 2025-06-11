@@ -1,4 +1,4 @@
-mport { useRouter } from 'next/router';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Header from '@/components/header';
 import withAuth from '@/components/withAuth';
