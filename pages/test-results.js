@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import withAuth from '@/components/withAuth';
-import Link from 'next/link';
 import Header from '@/components/header.js';
 import courses from '../data/courses.json';
 
@@ -14,12 +13,15 @@ function TestResults({ user }) {
   useEffect(() => {
     const saved = localStorage.getItem('striveResults');
     if (!saved) return;
+
     const allResults = JSON.parse(saved);
-    const userResults = allResults.filter(r => r.student === user.name);
+    // Filter by logged-in student's email
+    const userResults = allResults.filter(r => r.studentEmail === user.email);
     setResults(userResults);
     calculateAverages(userResults);
-  }, [user.name]);
+  }, [user.email]);
 
+  // Same CAO points function as before
   const getCAOPoints = (percent, level) => {
     if (level === 'H') {
       if (percent >= 90) return 100;
@@ -43,16 +45,9 @@ function TestResults({ user }) {
 
   const mapSubjectToCategory = (subject) => {
     const lower = subject.toLowerCase();
-    if ([
-      'maths', 'mathematics', 'applied mathematics', 'physics',
-      'chemistry', 'biology', 'technology', 'engineering', 'computer science'
-    ].some(s => lower.includes(s))) return 'stem';
-    if ([
-      'french', 'german', 'irish', 'english', 'italian', 'spanish', 'language'
-    ].some(s => lower.includes(s))) return 'arts';
-    if ([
-      'business', 'economics', 'accounting'
-    ].some(s => lower.includes(s))) return 'business';
+    if (['maths', 'mathematics', 'applied mathematics', 'physics', 'chemistry', 'biology', 'technology', 'engineering', 'computer science'].some(s => lower.includes(s))) return 'stem';
+    if (['french', 'german', 'irish', 'english', 'italian', 'spanish', 'language'].some(s => lower.includes(s))) return 'arts';
+    if (['business', 'economics', 'accounting'].some(s => lower.includes(s))) return 'business';
     return '';
   };
 
@@ -61,7 +56,7 @@ function TestResults({ user }) {
 
     results.forEach(res => {
       const key = `${res.subject}__${res.level}`;
-      const percent = (res.score / res.total) * 100;
+      const percent = (res.score / (res.total || 100)) * 100;
       if (!data[key]) {
         data[key] = { subject: res.subject, level: res.level, total: 0, count: 0 };
       }
