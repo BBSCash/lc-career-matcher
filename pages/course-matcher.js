@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import Header from '../components/header';
-import { calculateTop6 } from '../lib/cao';
-import { recommendCourses } from '../lib/course-recommend';
+import Header from '../components/header.js';
 import courses from '../data/courses.json';
 
-export default function CourseMatcher() {
+function CourseMatcher() {
   const [caoPoints, setCaoPoints] = useState(0);
   const [matchedCourses, setMatchedCourses] = useState([]);
   const [topSubjects, setTopSubjects] = useState([]);
@@ -12,18 +10,90 @@ export default function CourseMatcher() {
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('striveUser')) : null;
 
   useEffect(() => {
+    if (!user?.email) return;
+
     const saved = localStorage.getItem('striveResults');
     if (!saved) return;
 
     const results = JSON.parse(saved);
-    const { top6, totalPoints } = calculateTop6(results);
+
+    // Filter results by studentEmail
+    const userResults = results.filter(r => r.studentEmail === user.email);
+
+    // Calculate averages & points
+    const { top6, totalPoints } = calculateTop6(userResults);
 
     setCaoPoints(totalPoints);
     setTopSubjects(top6.map((s) => s.subject));
 
     const matches = recommendCourses(top6, totalPoints, courses);
     setMatchedCourses(matches);
-  }, []);
+  }, [user]);
+
+  // Helper: CAO points calculation
+  const getCAOPoints = (percent, level) => {
+    if (level === 'H') {
+      if (percent >= 90) return 100;
+      if (percent >= 80) return 88;
+      if (percent >= 70) return 77;
+      if (percent >= 60) return 66;
+      if (percent >= 50) return 56;
+      if (percent >= 40) return 46;
+      if (percent >= 30) return 37;
+      return 0;
+    } else {
+      if (percent >= 90) return 56;
+      if (percent >= 80) return 46;
+      if (percent >= 70) return 37;
+      if (percent >= 60) return 28;
+      if (percent >= 50) return 20;
+      if (percent >= 40) return 12;
+      return 0;
+    }
+  };
+
+  // Helper: Calculate top 6 subjects with averages and points
+  const calculateTop6 = (results) => {
+    const data = {};
+
+    results.forEach(res => {
+      const key = `${res.subject}__${res.level}`;
+      const percent = (res.score / (res.total || 100)) * 100;
+      if (!data[key]) {
+        data[key] = { subject: res.subject, level: res.level, total: 0, count: 0 };
+      }
+      data[key].total += percent;
+      data[key].count++;
+    });
+
+    const averages = Object.values(data).map(({ subject, level, total, count }) => {
+      const avg = total / count;
+      const points = getCAOPoints(avg, level);
+      return { subject, level, avg: avg.toFixed(1), points };
+    });
+
+    const top6 = averages.sort((a, b) => b.points - a.points).slice(0, 6);
+    const totalPoints = top6.reduce((sum, s) => sum + s.points, 0);
+
+    return { top6, totalPoints };
+  };
+
+  // Helper: Map subject to category
+  const mapSubjectToCategory = (subject) => {
+    const lower = subject.toLowerCase();
+    if (['maths', 'mathematics', 'applied mathematics', 'physics', 'chemistry', 'biology', 'technology', 'engineering', 'computer science'].some(s => lower.includes(s))) return 'stem';
+    if (['french', 'german', 'irish', 'english', 'italian', 'spanish', 'language'].some(s => lower.includes(s))) return 'arts';
+    if (['business', 'economics', 'accounting'].some(s => lower.includes(s))) return 'business';
+    return '';
+  };
+
+  // Helper: Recommend courses
+  const recommendCourses = (topSubjects, totalPoints, coursesList) => {
+    return coursesList.filter(course => {
+      return course.points <= totalPoints &&
+        topSubjects.some(sub => course.category?.toLowerCase().includes(mapSubjectToCategory(sub.subject)));
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -53,3 +123,4 @@ export default function CourseMatcher() {
   );
 }
 
+export default CourseMatcher;
