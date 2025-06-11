@@ -10,13 +10,11 @@ function PrincipalAnalytics({ user }) {
 
   useEffect(() => {
     const storedStudents = JSON.parse(localStorage.getItem('striveStudents')) || [];
-    setStudents(storedStudents);
-
-    fetch('/api/all-results')
-      .then(res => res.json())
-      .then(data => setResults(data.results || []));
-
+    const storedResults = JSON.parse(localStorage.getItem('striveResults')) || [];
     const storedAttendance = JSON.parse(localStorage.getItem('striveAttendance')) || [];
+
+    setStudents(storedStudents);
+    setResults(storedResults);
     setAttendance(storedAttendance);
   }, []);
 
@@ -162,6 +160,5 @@ function PrincipalAnalytics({ user }) {
     </div>
   );
 }
-
 
 export default withAuth(PrincipalAnalytics, ['principal']);
