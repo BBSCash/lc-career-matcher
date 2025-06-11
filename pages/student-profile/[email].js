@@ -10,8 +10,9 @@ function StudentProfile({ user }) {
   const [student, setStudent] = useState(null);
   const [results, setResults] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Effect 1: Find student
+  // Load student once router is ready
   useEffect(() => {
     if (!router.isReady || !email) return;
 
@@ -20,9 +21,12 @@ function StudentProfile({ user }) {
     setStudent(foundStudent || null);
   }, [router.isReady, email]);
 
-  // Effect 2: Once student found, get results and attendance
+  // Load results and attendance once student is set
   useEffect(() => {
-    if (!student) return;
+    if (!student) {
+      setIsLoading(false);
+      return;
+    }
 
     const allResults = JSON.parse(localStorage.getItem('striveResults')) || [];
     const studentResults = allResults.filter(r => r.studentEmail.toLowerCase() === student.email.toLowerCase());
@@ -40,20 +44,27 @@ function StudentProfile({ user }) {
     });
 
     setAttendanceSummary(summary);
+    setIsLoading(false);
   }, [student]);
 
-  if (!router.isReady) {
-    return null; // or loading spinner
+  if (!router.isReady || isLoading) {
+    return (
+      <div className="min-h-screen bg-white text-black flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
   }
 
-  if (!student) return (
-    <div className="min-h-screen bg-white text-black">
-      <Header user={user} />
-      <div className="max-w-4xl mx-auto p-6">
-        <p className="text-red-600">Student not found.</p>
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-white text-black">
+        <Header user={user} />
+        <div className="max-w-4xl mx-auto p-6">
+          <p className="text-red-600">Student not found.</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -116,4 +127,3 @@ function StudentProfile({ user }) {
 }
 
 export default withAuth(StudentProfile, ['teacher', 'principal']);
-
