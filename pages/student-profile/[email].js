@@ -12,6 +12,8 @@ function StudentProfile({ user }) {
   const [attendanceSummary, setAttendanceSummary] = useState({});
 
   useEffect(() => {
+    if (!router.isReady) return; // wait for router to be ready
+
     if (!email) return;
 
     const students = JSON.parse(localStorage.getItem('striveStudents')) || [];
@@ -34,7 +36,12 @@ function StudentProfile({ user }) {
     });
 
     setAttendanceSummary(summary);
-  }, [email]);
+  }, [router.isReady, email]);
+
+  if (!router.isReady) {
+    // You can show a loading spinner or nothing while router loads
+    return null;
+  }
 
   if (!student) return (
     <div className="min-h-screen bg-white text-black">
@@ -76,17 +83,28 @@ function StudentProfile({ user }) {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold mb-2">Attendance Summary (Year-to-Date)</h2>
+          <h2 className="text-xl font-semibold mb-2">Attendance Summary (Year-to-date)</h2>
           {Object.keys(attendanceSummary).length === 0 ? (
-            <p>No attendance recorded yet.</p>
+            <p>No attendance records available.</p>
           ) : (
-            <ul className="list-disc ml-6">
-              {Object.entries(attendanceSummary).map(([className, counts]) => (
-                <li key={className}>
-                  <strong>{className}</strong>: Present {counts.present} days, Absent {counts.absent} days
-                </li>
-              ))}
-            </ul>
+            <table className="table-auto border border-gray-300 w-full text-left">
+              <thead>
+                <tr>
+                  <th className="border border-gray-300 px-3 py-1">Class</th>
+                  <th className="border border-gray-300 px-3 py-1">Present</th>
+                  <th className="border border-gray-300 px-3 py-1">Absent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(attendanceSummary).map(([className, counts]) => (
+                  <tr key={className}>
+                    <td className="border border-gray-300 px-3 py-1">{className}</td>
+                    <td className="border border-gray-300 px-3 py-1">{counts.present}</td>
+                    <td className="border border-gray-300 px-3 py-1">{counts.absent}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </section>
       </div>
@@ -94,4 +112,5 @@ function StudentProfile({ user }) {
   );
 }
 
-export default withAuth(StudentProfile, ['teacher', 'principal', 'student']);
+export default withAuth(StudentProfile, ['teacher', 'principal']);
+
