@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/header.js';
-import { calculateTop6 } from '../lib/cao';
-import { recommendCourses } from '../lib/course-recommend';
+import { calculateTop6 } from '../lib/cao.js';
+import { recommendCourses } from '../lib/course-recommend.js';
 import courses from '../data/courses.json';
 
 export default function CourseMatcher() {
