@@ -6,6 +6,9 @@ function TeacherTimetable({ user }) {
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [results, setResults] = useState([]);
+  const [notes, setNotes] = useState({});
 
   useEffect(() => {
     const storedClasses = JSON.parse(localStorage.getItem('striveClassGroups')) || [];
@@ -14,6 +17,12 @@ function TeacherTimetable({ user }) {
 
     const allStudents = JSON.parse(localStorage.getItem('striveStudents')) || [];
     setStudents(allStudents);
+
+    const savedResults = JSON.parse(localStorage.getItem('striveResults')) || [];
+    setResults(savedResults);
+
+    const savedNotes = JSON.parse(localStorage.getItem('striveNotes')) || {};
+    setNotes(savedNotes);
   }, [user.email]);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -31,6 +40,23 @@ function TeacherTimetable({ user }) {
     setClasses(updated);
     setSelectedClass(updated[classIndex]);
     localStorage.setItem('striveClassGroups', JSON.stringify(updated));
+  };
+
+  const saveNote = (studentId, content) => {
+    const updated = { ...notes, [studentId]: content };
+    setNotes(updated);
+    localStorage.setItem('striveNotes', JSON.stringify(updated));
+  };
+
+  const getAttendanceStats = (studentId) => {
+    const allAttendance = classes.flatMap(c => Object.entries(c.attendance || {}).filter(([id]) => id === studentId));
+    const total = allAttendance.length;
+    const present = allAttendance.filter(([_, val]) => val).length;
+    return total > 0 ? `${present}/${total} (${Math.round((present / total) * 100)}%)` : 'No data';
+  };
+
+  const getStudentResults = (studentId) => {
+    return results.filter(r => r.studentId === studentId);
   };
 
   return (
@@ -88,7 +114,12 @@ function TeacherTimetable({ user }) {
               const isPresent = selectedClass.attendance?.[id];
               return (
                 <li key={id} className="flex justify-between items-center bg-white px-4 py-2 border rounded">
-                  <span>{stu.name}</span>
+                  <button
+                    onClick={() => setSelectedStudent(stu)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {stu.name}
+                  </button>
                   <button
                     onClick={() => toggleAttendance(id)}
                     className={`px-3 py-1 rounded font-semibold text-sm ${isPresent ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
@@ -99,6 +130,40 @@ function TeacherTimetable({ user }) {
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full">
+            <h3 className="text-xl font-bold text-orange-600 mb-4">👤 {selectedStudent.name}'s Profile</h3>
+            <p><strong>Email:</strong> {selectedStudent.email}</p>
+            <p><strong>Year Group:</strong> {selectedStudent.yearGroup}</p>
+            <p><strong>ID:</strong> {selectedStudent.id}</p>
+            <p><strong>Attendance:</strong> {getAttendanceStats(selectedStudent.id)}</p>
+
+            <h4 className="mt-4 font-semibold text-orange-500">🧪 Test Results</h4>
+            <ul className="list-disc ml-5">
+              {getStudentResults(selectedStudent.id).map((r, i) => (
+                <li key={i} className="text-sm">{r.subject} - {r.score}/{r.total} ({r.level})</li>
+              ))}
+            </ul>
+
+            <h4 className="mt-4 font-semibold text-orange-500">📝 Teacher Notes</h4>
+            <textarea
+              className="w-full p-2 border rounded mt-1 text-sm"
+              rows="3"
+              value={notes[selectedStudent.id] || ''}
+              onChange={(e) => saveNote(selectedStudent.id, e.target.value)}
+            />
+
+            <button
+              onClick={() => setSelectedStudent(null)}
+              className="mt-4 text-orange-600 underline text-sm"
+            >
+              ✖ Close
+            </button>
+          </div>
         </div>
       )}
     </div>
