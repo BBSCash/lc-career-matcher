@@ -1,0 +1,171 @@
+[
+    {
+      "cao_code": "DN200",
+      "course": "Science",
+      "college": "UCD",
+      "points": 510,
+      "subjects": [
+        "Biology",
+        "Chemistry",
+        "Physics",
+        "Maths"
+      ],
+      "category": "STEM",
+      "link": "https://www.myucd.ie/courses/science/"
+    },
+    {
+      "cao_code": "DN150",
+      "course": "Engineering",
+      "college": "UCD",
+      "points": 566,
+      "subjects": [
+        "Maths",
+        "Physics"
+      ],
+      "category": "STEM",
+      "link": "https://www.myucd.ie/courses/engineering/"
+    },
+    {
+      "cao_code": "TR004",
+      "course": "Law",
+      "college": "Trinity College Dublin",
+      "points": 566,
+      "subjects": [
+        "English",
+        "History",
+        "Politics"
+      ],
+      "category": "Law",
+      "link": "https://www.tcd.ie/courses/undergraduate/courses/law/"
+    },
+    {
+      "cao_code": "CK402",
+      "course": "Biological and Chemical Sciences",
+      "college": "UCC",
+      "points": 477,
+      "subjects": [
+        "Biology",
+        "Chemistry",
+        "Maths"
+      ],
+      "category": "STEM",
+      "link": "https://www.ucc.ie/en/ck402/"
+    },
+    {
+      "cao_code": "CK101",
+      "course": "Arts",
+      "college": "UCC",
+      "points": 381,
+      "subjects": [
+        "English",
+        "History",
+        "Irish",
+        "Geography"
+      ],
+      "category": "Arts",
+      "link": "https://www.ucc.ie/en/ck101/"
+    },
+    {
+      "cao_code": "MH101",
+      "course": "Arts (MH101)",
+      "college": "Maynooth University",
+      "points": 336,
+      "subjects": [
+        "English",
+        "History",
+        "Sociology"
+      ],
+      "category": "Arts",
+      "link": "https://www.maynoothuniversity.ie/study-maynooth/undergraduate-studies/courses/arts"
+    },
+    {
+      "cao_code": "TR083",
+      "course": "Computer Science",
+      "college": "Trinity College Dublin",
+      "points": 520,
+      "subjects": [
+        "Maths",
+        "Computer Science",
+        "Physics"
+      ],
+      "category": "STEM",
+      "link": "https://www.tcd.ie/courses/undergraduate/courses/computer-science/"
+    },
+    {
+      "cao_code": "DC127",
+      "course": "Business Studies",
+      "college": "Dublin City University",
+      "points": 487,
+      "subjects": [
+        "Business",
+        "Economics",
+        "Maths"
+      ],
+      "category": "Business",
+      "link": "https://www.dcu.ie/courses/undergraduate/dc127"
+    },
+    {
+      "cao_code": "CK203",
+      "course": "Accounting",
+      "college": "UCC",
+      "points": 498,
+      "subjects": [
+        "Accounting",
+        "Maths",
+        "Business"
+      ],
+      "category": "Business",
+      "link": "https://www.ucc.ie/en/ck203/"
+    },
+    {
+      "cao_code": "WD002",
+      "course": "Engineering (Common Entry)",
+      "college": "SETU Waterford",
+      "points": 410,
+      "subjects": [
+        "Maths",
+        "Physics"
+      ],
+      "category": "STEM",
+      "link": "https://www.setu.ie/courses/WD002"
+    },
+    {
+      "cao_code": "AL801",
+      "course": "Digital Marketing",
+      "college": "TUS Athlone",
+      "points": 290,
+      "subjects": [
+        "Business",
+        "Maths",
+        "English"
+      ],
+      "category": "Business",
+      "link": "https://www.ait.ie/courses/AL801"
+    },
+    {
+      "cao_code": "LM002",
+      "course": "Arts",
+      "college": "University of Limerick",
+      "points": 330,
+      "subjects": [
+        "English",
+        "History",
+        "Sociology"
+      ],
+      "category": "Arts",
+      "link": "https://www.ul.ie/courses/arts"
+    },
+    {
+      "cao_code": "AU874",
+      "course": "Biomedical Science",
+      "college": "Atlantic Technological University",
+      "points": 434,
+      "subjects": [
+        "Biology",
+        "Chemistry",
+        "Maths"
+      ],
+      "category": "STEM",
+      "link": "https://www.atu.ie/course/AU874"
+    }
+  ]
