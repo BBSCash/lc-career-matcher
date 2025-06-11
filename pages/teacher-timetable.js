@@ -8,13 +8,12 @@ function TeacherTimetable({ user }) {
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [results, setResults] = useState([]);
-  const [notes, setNotes] = useState({});
   const [editingResultIndex, setEditingResultIndex] = useState(null);
-  const [editResult, setEditResult] = useState({ subject: '', score: '', total: '', level: '' });
+  const [editResult, setEditResult] = useState({ subject: '', topic: '', score: '', total: 100, level: '' });
 
   useEffect(() => {
-    const storedClasses = JSON.parse(localStorage.getItem('striveClassGroups')) || [];
-    const teacherClasses = storedClasses.filter(c => c.teacherId === user.email);
+    const allClasses = JSON.parse(localStorage.getItem('striveClassGroups')) || [];
+    const teacherClasses = allClasses.filter(c => c.teacherId === user.email);
     setClasses(teacherClasses);
 
     const allStudents = JSON.parse(localStorage.getItem('striveStudents')) || [];
@@ -22,17 +21,39 @@ function TeacherTimetable({ user }) {
 
     const savedResults = JSON.parse(localStorage.getItem('striveResults')) || [];
     setResults(savedResults);
-
-    const savedNotes = JSON.parse(localStorage.getItem('striveNotes')) || {};
-    setNotes(savedNotes);
   }, [user.email]);
+
+  // Helpers
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const times = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
 
-  const getClassAtSlot = (day, time) => {
-    return classes.find(c => c.day === day && c.time === time);
+  const getClassAtSlot = (day, time) => classes.find(c => c.day === day && c.time === time);
+
+  // Editing Results
+
+  const startEditResult = (index) => {
+    setEditingResultIndex(index);
+    setEditResult(results[index]);
   };
+
+  const saveEditResult = () => {
+    const updatedResults = [...results];
+    updatedResults[editingResultIndex] = editResult;
+    setResults(updatedResults);
+    localStorage.setItem('striveResults', JSON.stringify(updatedResults));
+    setEditingResultIndex(null);
+    setEditResult({ subject: '', topic: '', score: '', total: 100, level: '' });
+  };
+
+  const deleteResult = (index) => {
+    const updatedResults = [...results];
+    updatedResults.splice(index, 1);
+    setResults(updatedResults);
+    localStorage.setItem('striveResults', JSON.stringify(updatedResults));
+  };
+
+  // Attendance toggle (existing)
 
   const toggleAttendance = (studentId) => {
     const updated = [...classes];
@@ -44,49 +65,12 @@ function TeacherTimetable({ user }) {
     localStorage.setItem('striveClassGroups', JSON.stringify(updated));
   };
 
-  const saveNote = (studentId, content) => {
-    const updated = { ...notes, [studentId]: content };
-    setNotes(updated);
-    localStorage.setItem('striveNotes', JSON.stringify(updated));
-  };
-
-  const getAttendanceStats = (studentId) => {
-    const allAttendance = classes.flatMap(c => Object.entries(c.attendance || {}).filter(([id]) => id === studentId));
-    const total = allAttendance.length;
-    const present = allAttendance.filter(([_, val]) => val).length;
-    return total > 0 ? `${present}/${total} (${Math.round((present / total) * 100)}%)` : 'No data';
-  };
-
-  const getStudentResults = (studentId) => {
-    return results.filter(r => r.studentId === studentId);
-  };
-
-  const handleEditResult = (index, result) => {
-    setEditingResultIndex(index);
-    setEditResult(result);
-  };
-
-  const handleSaveResult = (studentId) => {
-    const updated = [...results];
-    updated[editingResultIndex] = { ...editResult, studentId };
-    setResults(updated);
-    localStorage.setItem('striveResults', JSON.stringify(updated));
-    setEditingResultIndex(null);
-    setEditResult({ subject: '', score: '', total: '', level: '' });
-  };
-
-  const handleDeleteResult = (index) => {
-    const updated = [...results];
-    updated.splice(index, 1);
-    setResults(updated);
-    localStorage.setItem('striveResults', JSON.stringify(updated));
-  };
-
   return (
     <div className="bg-white min-h-screen p-6 text-black">
       <Header user={user} />
       <h1 className="text-3xl font-bold text-orange-500 mb-6">📅 My Timetable</h1>
 
+      {/* Timetable Table */}
       <div className="overflow-x-auto mb-8">
         <table className="min-w-full border border-gray-300 text-center">
           <thead className="bg-orange-100 text-orange-700">
@@ -125,18 +109,20 @@ function TeacherTimetable({ user }) {
         </table>
       </div>
 
+      {/* Selected Class Students */}
       {selectedClass && (
-        <div className="bg-orange-50 p-4 rounded shadow">
+        <div className="bg-orange-50 p-4 rounded shadow mb-6">
           <h2 className="text-xl font-semibold text-orange-600 mb-4">
             🧑‍🏫 {selectedClass.name} - {selectedClass.day} at {selectedClass.time}
           </h2>
           <ul className="space-y-2">
-            {selectedClass.studentIds.map(id => {
-              const stu = students.find(s => s.id === id);
+            {selectedClass.studentIds.map(emailOrId => {
+              // Find student by email or id if you want; here assuming email is used everywhere:
+              const stu = students.find(s => s.email === emailOrId || s.id === emailOrId);
               if (!stu) return null;
-              const isPresent = selectedClass.attendance?.[id];
+              const isPresent = selectedClass.attendance?.[stu.id];
               return (
-                <li key={id} className="flex justify-between items-center bg-white px-4 py-2 border rounded">
+                <li key={stu.email} className="flex justify-between items-center bg-white px-4 py-2 border rounded">
                   <button
                     onClick={() => setSelectedStudent(stu)}
                     className="text-blue-600 hover:underline"
@@ -144,7 +130,7 @@ function TeacherTimetable({ user }) {
                     {stu.name}
                   </button>
                   <button
-                    onClick={() => toggleAttendance(id)}
+                    onClick={() => toggleAttendance(stu.id)}
                     className={`px-3 py-1 rounded font-semibold text-sm ${isPresent ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
                   >
                     {isPresent ? 'Present' : 'Absent'}
@@ -156,28 +142,31 @@ function TeacherTimetable({ user }) {
         </div>
       )}
 
+      {/* Selected Student Profile & Results */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full overflow-y-auto max-h-[90vh]">
+          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-orange-600 mb-4">👤 {selectedStudent.name}'s Profile</h3>
             <p><strong>Email:</strong> {selectedStudent.email}</p>
             <p><strong>Year Group:</strong> {selectedStudent.yearGroup}</p>
-            <p><strong>ID:</strong> {selectedStudent.id}</p>
-            <p><strong>Attendance:</strong> {getAttendanceStats(selectedStudent.id)}</p>
 
             <h4 className="mt-4 font-semibold text-orange-500">🧪 Test Results</h4>
             <ul className="list-disc ml-5">
-              {getStudentResults(selectedStudent.id).map((r, i) => (
-                <li key={i} className="text-sm flex justify-between items-center">
-                  <span>{r.subject} - {r.score}/{r.total} ({r.level})</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEditResult(results.indexOf(r), r)} className="text-blue-600 text-xs">✏️</button>
-                    <button onClick={() => handleDeleteResult(results.indexOf(r))} className="text-red-600 text-xs">🗑️</button>
-                  </div>
-                </li>
-              ))}
+              {results
+                .map((r, i) => ({ ...r, index: i }))
+                .filter(r => r.studentEmail === selectedStudent.email)
+                .map(r => (
+                  <li key={r.index} className="flex justify-between items-center text-sm mb-1">
+                    <span>{r.subject} ({r.level}) - {r.topic ? `${r.topic} - ` : ''}{r.score}/{r.total}</span>
+                    <span>
+                      <button onClick={() => startEditResult(r.index)} className="text-blue-600 text-xs mr-2">✏️</button>
+                      <button onClick={() => deleteResult(r.index)} className="text-red-600 text-xs">🗑️</button>
+                    </span>
+                  </li>
+                ))}
             </ul>
 
+            {/* Edit Result Panel */}
             {editingResultIndex !== null && (
               <div className="mt-4 bg-gray-100 p-3 rounded">
                 <h5 className="text-sm font-semibold mb-2">Edit Result</h5>
@@ -186,6 +175,12 @@ function TeacherTimetable({ user }) {
                   className="w-full p-1 mb-2 border rounded text-sm"
                   value={editResult.subject}
                   onChange={(e) => setEditResult({ ...editResult, subject: e.target.value })}
+                />
+                <input
+                  placeholder="Topic"
+                  className="w-full p-1 mb-2 border rounded text-sm"
+                  value={editResult.topic}
+                  onChange={(e) => setEditResult({ ...editResult, topic: e.target.value })}
                 />
                 <input
                   placeholder="Score"
@@ -209,21 +204,13 @@ function TeacherTimetable({ user }) {
                   <option value="O">Ordinary</option>
                 </select>
                 <button
-                  onClick={() => handleSaveResult(selectedStudent.id)}
+                  onClick={saveEditResult}
                   className="bg-orange-500 text-white px-3 py-1 rounded text-sm w-full"
                 >
                   💾 Save Result
                 </button>
               </div>
             )}
-
-            <h4 className="mt-4 font-semibold text-orange-500">📝 Teacher Notes</h4>
-            <textarea
-              className="w-full p-2 border rounded mt-1 text-sm"
-              rows="3"
-              value={notes[selectedStudent.id] || ''}
-              onChange={(e) => saveNote(selectedStudent.id, e.target.value)}
-            />
 
             <button
               onClick={() => setSelectedStudent(null)}
