@@ -1,4 +1,4 @@
-import Header from '../components/Header';
+import Header from '../components/header.js';
 
 export default function Contact() {
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('striveUser')) : null;
