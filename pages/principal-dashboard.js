@@ -11,7 +11,7 @@ function PrincipalDashboard({ user }) {
     { label: 'Manage Students', path: '/principal-students' },
     { label: 'Manage Classes', path: '/principal-classes' },
     { label: 'Attendance Report', path: '/attendance-report' },
-    { label: 'Manage Users', path: '/user.management.js' },
+    { label: 'Manage Users', path: '/user-management.js' },
     { label: 'Analytics', path: '/principal-analytics' }
   ];
 
