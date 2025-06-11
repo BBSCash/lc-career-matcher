@@ -1,129 +1,138 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import Header from '@/components/header';
-import withAuth from '@/components/withAuth';
+import { getSession } from 'next-auth/react';
+import Header from '@/components/Header';
+import Link from 'next/link';
 
-function StudentProfile({ user }) {
+export default function StudentProfile() {
   const router = useRouter();
   const { email } = router.query;
+  const [studentData, setStudentData] = useState(null);
+  const [userRole, setUserRole] = useState('');
 
-  const [student, setStudent] = useState(null);
-  const [results, setResults] = useState([]);
-  const [attendanceSummary, setAttendanceSummary] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load student once router is ready
   useEffect(() => {
-    if (!router.isReady || !email) return;
+    const fetchData = async () => {
+      const session = await getSession();
+      if (!session) return router.push('/login');
+      setUserRole(session.user.role);
 
-    const students = JSON.parse(localStorage.getItem('striveStudents')) || [];
-    const foundStudent = students.find(s => s.email.toLowerCase() === email.toLowerCase());
-    setStudent(foundStudent || null);
-  }, [router.isReady, email]);
+      const res = await fetch(`/api/student-results?email=${email}`);
+      const data = await res.json();
 
-  // Load results and attendance once student is set
-  useEffect(() => {
-    if (!student) {
-      setIsLoading(false);
-      return;
+      const stored = JSON.parse(localStorage.getItem('striveStudents')) || [];
+      const profile = stored.find(s => s.email === email) || {};
+
+      setStudentData({ ...profile, results: data.results });
+    };
+    if (email) fetchData();
+  }, [email]);
+
+  const calculateCAOPoints = (avg, level) => {
+    if (level === 'OL') {
+      if (avg >= 90) return 56;
+      if (avg >= 80) return 46;
+      if (avg >= 70) return 37;
+      if (avg >= 60) return 28;
+      if (avg >= 50) return 20;
+      if (avg >= 40) return 12;
+      if (avg >= 30) return 0;
+    } else {
+      if (avg >= 90) return 100;
+      if (avg >= 80) return 88;
+      if (avg >= 70) return 77;
+      if (avg >= 60) return 66;
+      if (avg >= 50) return 56;
+      if (avg >= 40) return 46;
+      if (avg >= 30) return 37;
+      if (avg >= 20) return 0;
     }
+    return 0;
+  };
 
-    const allResults = JSON.parse(localStorage.getItem('striveResults')) || [];
-    const studentResults = allResults.filter(r => r.studentEmail.toLowerCase() === student.email.toLowerCase());
-    setResults(studentResults);
+  if (!studentData) return <div className="p-4">Loading...</div>;
 
-    const attendanceLog = JSON.parse(localStorage.getItem('striveAttendance')) || [];
-    const studentAttendance = attendanceLog.filter(a => a.studentId === student.id);
+  const subjectGroups = {};
+  studentData.results.forEach(result => {
+    if (!subjectGroups[result.subject]) subjectGroups[result.subject] = [];
+    subjectGroups[result.subject].push(result);
+  });
 
-    // Aggregate attendance by class
-    const summary = {};
-    studentAttendance.forEach(({ className, status }) => {
-      if (!summary[className]) summary[className] = { present: 0, absent: 0 };
-      if (status) summary[className].present++;
-      else summary[className].absent++;
-    });
+  const subjectAverages = Object.entries(subjectGroups).map(([subject, results]) => {
+    const avg = results.reduce((sum, r) => sum + r.score, 0) / results.length;
+    const level = results[0].level;
+    const cao = calculateCAOPoints(avg, level);
+    return { subject, avg, level, cao, results };
+  });
 
-    setAttendanceSummary(summary);
-    setIsLoading(false);
-  }, [student]);
+  const top6 = [...subjectAverages]
+    .sort((a, b) => b.cao - a.cao)
+    .slice(0, 6);
 
-  if (!router.isReady || isLoading) {
-    return (
-      <div className="min-h-screen bg-white text-black flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div className="min-h-screen bg-white text-black">
-        <Header user={user} />
-        <div className="max-w-4xl mx-auto p-6">
-          <p className="text-red-600">Student not found.</p>
-        </div>
-      </div>
-    );
-  }
+  const totalCAO = top6.reduce((sum, s) => sum + s.cao, 0);
+  const overallAvg = subjectAverages.reduce((sum, s) => sum + s.avg, 0) / subjectAverages.length;
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <Header user={user} />
-      <div className="max-w-5xl mx-auto p-6">
-        <h1 className="text-3xl font-bold text-orange-500 mb-6">{student.name}'s Profile</h1>
+    <div className="bg-white min-h-screen text-black">
+      <Header />
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-orange-500">{studentData.name}'s Profile</h1>
+        <p className="text-sm text-gray-600">{studentData.email} | {studentData.yearGroup}</p>
+        {studentData.dateOfBirth && (
+          <p className="text-sm text-gray-600">Date of Birth: {studentData.dateOfBirth}</p>
+        )}
+        {studentData.parentContact && (
+          <p className="text-sm text-gray-600">Parent Contact: {studentData.parentContact}</p>
+        )}
+        {studentData.address && (
+          <p className="text-sm text-gray-600">Address: {studentData.address}</p>
+        )}
+        {studentData.registered && (
+          <p className="text-sm text-green-600 font-semibold">✅ Registered</p>
+        )}
+        {studentData.notes && (
+          <p className="text-sm text-gray-700 mt-1 italic">📝 {studentData.notes}</p>
+        )}
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Personal Details</h2>
-          <p><strong>Email:</strong> {student.email}</p>
-          <p><strong>Year Group:</strong> {student.yearGroup}</p>
-          <p><strong>Date of Birth:</strong> {student.dateOfBirth || 'N/A'}</p>
-          <p><strong>Parent Contact:</strong> {student.parentContact || 'N/A'}</p>
-          <p><strong>Address:</strong> {student.address || 'N/A'}</p>
-          <p><strong>Registered:</strong> {student.registered ? 'Yes' : 'No'}</p>
-          <p><strong>Notes:</strong> {student.notes || 'None'}</p>
-        </section>
+        <div className="mt-4">
+          <p><strong>Overall Average:</strong> {overallAvg.toFixed(1)}%</p>
+          <p><strong>Total CAO Points (Top 6):</strong> {totalCAO}</p>
+        </div>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Test Results</h2>
-          {results.length === 0 ? (
-            <p>No test results available.</p>
-          ) : (
-            <ul className="list-disc ml-6 space-y-1">
-              {results.map((r, i) => (
-                <li key={i}>{r.subject} ({r.level}) — {r.topic}: {r.score}/{r.total}</li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section>
-          <h2 className="text-xl font-semibold mb-2">Attendance Summary (Year-to-date)</h2>
-          {Object.keys(attendanceSummary).length === 0 ? (
-            <p>No attendance records available.</p>
-          ) : (
-            <table className="table-auto border border-gray-300 w-full text-left">
-              <thead>
-                <tr>
-                  <th className="border border-gray-300 px-3 py-1">Class</th>
-                  <th className="border border-gray-300 px-3 py-1">Present</th>
-                  <th className="border border-gray-300 px-3 py-1">Absent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(attendanceSummary).map(([className, counts]) => (
-                  <tr key={className}>
-                    <td className="border border-gray-300 px-3 py-1">{className}</td>
-                    <td className="border border-gray-300 px-3 py-1">{counts.present}</td>
-                    <td className="border border-gray-300 px-3 py-1">{counts.absent}</td>
-                  </tr>
+        <div className="mt-6">
+          {subjectAverages.map(subj => (
+            <div key={subj.subject} className="border-b border-gray-300 pb-4 mb-4">
+              <h2 className="text-xl font-semibold text-orange-500">{subj.subject}</h2>
+              <p>Average: {subj.avg.toFixed(1)}% | Level: {subj.level} | CAO Points: {subj.cao}</p>
+              <ul className="mt-2 list-disc ml-6">
+                {subj.results.map((r, i) => (
+                  <li key={i} className="mb-1">
+                    <span>{r.topic} - {r.score}% ({r.date})</span>
+                    {['teacher', 'principal'].includes(userRole) && (
+                      <span className="ml-4">
+                        <button className="text-blue-600 mr-2" onClick={() => console.log('Edit', r)}>Edit</button>
+                        <button className="text-red-600" onClick={() => console.log('Delete', r)}>Delete</button>
+                      </span>
+                    )}
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-orange-500">Top 6 Subjects</h2>
+          <ul className="list-disc ml-6 mt-2">
+            {top6.map((s, i) => (
+              <li key={i}>{s.subject}: {s.cao} CAO Points</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-6">
+          <Link href="/teacher-dashboard" className="text-blue-600">← Back to Dashboard</Link>
+        </div>
       </div>
     </div>
   );
 }
-
-export default withAuth(StudentProfile, ['teacher', 'principal']);
