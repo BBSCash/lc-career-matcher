@@ -155,7 +155,7 @@ function TeacherTimetable({ user }) {
                 <li key={stu.email} className="flex justify-between items-center bg-white px-4 py-2 border rounded">
                   <button
                     onClick={() => openStudentProfile(stu.email)}
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 hover:underline text-left"
                   >
                     {stu.name}
                   </button>
@@ -186,3 +186,4 @@ function TeacherTimetable({ user }) {
 }
 
 export default withAuth(TeacherTimetable, ['teacher']);
+
