@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { getSession } from 'next-auth/react';
-import Header from '@/components/Header';
+import Header from '@/components/header.js';
 import Link from 'next/link';
 
 export default function StudentProfile() {
