@@ -38,5 +38,4 @@ function PrincipalDashboard({ user }) {
   );
 }
 
-
 export default withAuth(PrincipalDashboard, ['principal']);
