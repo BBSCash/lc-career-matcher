@@ -1,11 +1,14 @@
-// principal-classes.js
-
 import { useState, useEffect } from 'react';
 import withAuth from '@/components/withAuth';
 import Header from '@/components/header';
 
 const YEAR_GROUPS = ['1st Year', '2nd Year', '3rd Year', 'Transition Year', '5th Year', '6th Year'];
-const SUBJECTS = ['Maths', 'English', 'Irish', 'Science', 'French', 'History', 'Geography', 'Business', 'Art', 'Music'];
+const SUBJECTS = [
+  'Maths', 'English', 'Irish', 'Science', 'French', 'German', 'Spanish', 'Italian',
+  'History', 'Geography', 'Business', 'Accounting', 'Economics',
+  'Art', 'Music', 'Technology', 'Engineering', 'Computer Science',
+  'Agricultural Science', 'Religion', 'PE', 'Politics', 'Philosophy'
+];
 
 function PrincipalClasses({ user }) {
   const [activeYear, setActiveYear] = useState('6th Year');
@@ -13,7 +16,7 @@ function PrincipalClasses({ user }) {
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [form, setForm] = useState({ name: '', teacherId: '', day: '', time: '', editingIndex: null });
+  const [form, setForm] = useState({ name: '', teacherId: '', day: '', time: '', level: '', editingIndex: null });
 
   useEffect(() => {
     setStudents(JSON.parse(localStorage.getItem('striveStudents')) || []);
@@ -26,7 +29,7 @@ function PrincipalClasses({ user }) {
   };
 
   const createOrUpdateClass = () => {
-    if (!form.name || !form.teacherId || !form.day || !form.time) {
+    if (!form.name || !form.teacherId || !form.day || !form.time || !form.level) {
       alert('Please fill in all fields.');
       return;
     }
@@ -38,6 +41,7 @@ function PrincipalClasses({ user }) {
       teacherId: form.teacherId,
       day: form.day,
       time: form.time,
+      level: form.level,
       subject: activeSubject,
       yearGroup: activeYear,
       studentIds: existingStudentIds,
@@ -49,7 +53,7 @@ function PrincipalClasses({ user }) {
 
     setClasses(updated);
     localStorage.setItem('striveClassGroups', JSON.stringify(updated));
-    setForm({ name: '', teacherId: '', day: '', time: '', editingIndex: null });
+    setForm({ name: '', teacherId: '', day: '', time: '', level: '', editingIndex: null });
   };
 
   const assignStudent = (studentEmail, classIndex) => {
@@ -73,6 +77,7 @@ function PrincipalClasses({ user }) {
       teacherId: cls.teacherId,
       day: cls.day,
       time: cls.time,
+      level: cls.level,
       editingIndex: index,
     });
   };
@@ -116,13 +121,18 @@ function PrincipalClasses({ user }) {
             ))}
           </select>
           <div className="flex gap-2 mb-2">
-            <select name="day" value={form.day} onChange={handleFormChange} className="w-1/2 p-2 rounded border">
+            <select name="day" value={form.day} onChange={handleFormChange} className="w-1/3 p-2 rounded border">
               <option value="">Day</option>
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
-            <input name="time" type="time" value={form.time} onChange={handleFormChange} className="w-1/2 p-2 rounded border" />
+            <input name="time" type="time" value={form.time} onChange={handleFormChange} className="w-1/3 p-2 rounded border" />
+            <select name="level" value={form.level} onChange={handleFormChange} className="w-1/3 p-2 rounded border">
+              <option value="">Level</option>
+              <option value="Higher">Higher</option>
+              <option value="Ordinary">Ordinary</option>
+            </select>
           </div>
           <button onClick={createOrUpdateClass} className="bg-orange-500 text-white px-4 py-2 rounded font-semibold w-full">
             {form.editingIndex !== null ? '💾 Save Changes' : '📚 Create Class'}
@@ -142,6 +152,7 @@ function PrincipalClasses({ user }) {
               </div>
               <p><strong>Teacher:</strong> {teachers.find(t => t.email === cls.teacherId)?.name || 'N/A'}</p>
               <p><strong>Time:</strong> {cls.day} at {cls.time}</p>
+              <p><strong>Level:</strong> {cls.level}</p>
               <p className="mt-2 font-semibold">👨‍🎓 Assigned Students:</p>
               <ul className="list-disc ml-6">
                 {cls.studentIds.map(id => {
