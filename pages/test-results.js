@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import withAuth from '@/components/withAuth';
 import Link from 'next/link';
-import Header from '@/components/Header';
+import Header from '@/components/header.js';
 import courses from '../data/courses.json';
 
 function TestResults({ user }) {
